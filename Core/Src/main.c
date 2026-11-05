@@ -105,6 +105,10 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+
+	  usart2_send_string("Hello from STM32\r\n");
+	  LL_GPIO_TogglePin(GPIOB, LL_GPIO_PIN_3);
+	  LL_mDelay(1000);
   }
   /* USER CODE END 3 */
 }
