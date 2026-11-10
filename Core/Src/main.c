@@ -25,6 +25,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
+#include "bmp180.h"
 
 /* USER CODE END Includes */
 
@@ -99,7 +100,9 @@ int main(void)
   MX_I2C1_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-
+  bmp180_register_callbacks(i2c_read, i2c_write, LL_mDelay);
+  sprintf(msg, "bmp180_init: %u\r\n", bmp180_init());
+  usart2_send_string(msg);
   /* USER CODE END 2 */
 
   /* Infinite loop */
