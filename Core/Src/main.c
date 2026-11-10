@@ -24,6 +24,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <stdio.h>
 
 /* USER CODE END Includes */
 
@@ -67,6 +68,9 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
+  char msg[64];
+  uint8_t b[6];
+  uint8_t cmd[2];
 
   /* USER CODE END 1 */
 
@@ -105,10 +109,31 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+	    cmd[0] = 0x2E;
+	    i2c_write(0xEE, 0xF4, cmd, 1);
+	    LL_mDelay(5);
+	    i2c_read(0xEE, 0xF6, b, 2);
+	    uint16_t ut = ((uint16_t)b[0] << 8) | b[1];
 
-	  usart2_send_string("Hello from STM32\r\n");
-	  LL_GPIO_TogglePin(GPIOB, LL_GPIO_PIN_3);
-	  LL_mDelay(1000);
+	    cmd[0] = 0x34;
+	    i2c_write(0xEE, 0xF4, cmd, 1);
+	    LL_mDelay(5);
+	    i2c_read(0xEE, 0xF6, b, 3);
+	    uint32_t up = (((uint32_t)b[0] << 16) | ((uint32_t)b[1] << 8) | b[2]) >> 8;
+
+	    cmd[0] = 0x33; cmd[1] = 0x00;
+	    i2c_write(0x70, 0xAC, cmd, 2);
+	    LL_mDelay(80);
+	    i2c_receive(0x70, b, 6);
+	    uint32_t rh = ((uint32_t)b[1] << 12) | ((uint32_t)b[2] << 4) | (b[3] >> 4);
+	    uint32_t rt = ((uint32_t)(b[3] & 0x0F) << 16) | ((uint32_t)b[4] << 8) | b[5];
+
+	    sprintf(msg, "%u,%lu,%lu,%lu\r\n", ut, (unsigned long)up,
+	            (unsigned long)rh, (unsigned long)rt);
+	    usart2_send_string(msg);
+
+	    LL_GPIO_TogglePin(GPIOB, LL_GPIO_PIN_3);
+	    LL_mDelay(1000);
   }
   /* USER CODE END 3 */
 }

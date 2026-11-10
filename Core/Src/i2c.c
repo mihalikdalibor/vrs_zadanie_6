@@ -83,5 +83,74 @@ void MX_I2C1_Init(void)
 
 /* USER CODE BEGIN 1 */
 
+static uint8_t i2c_nack_cleanup(void)
+{
+  while (!LL_I2C_IsActiveFlag_STOP(I2C1)) {}
+  LL_I2C_ClearFlag_NACK(I2C1);
+  LL_I2C_ClearFlag_STOP(I2C1);
+  return 1;
+}
+
+uint8_t i2c_read(uint8_t dev_addr, uint8_t reg_addr, uint8_t *data, uint8_t len)
+{
+  LL_I2C_HandleTransfer(I2C1, dev_addr, LL_I2C_ADDRSLAVE_7BIT, 1,
+                        LL_I2C_MODE_SOFTEND, LL_I2C_GENERATE_START_WRITE);
+  while (!LL_I2C_IsActiveFlag_TXIS(I2C1))
+  {
+    if (LL_I2C_IsActiveFlag_NACK(I2C1)) return i2c_nack_cleanup();
+  }
+  LL_I2C_TransmitData8(I2C1, reg_addr);
+  while (!LL_I2C_IsActiveFlag_TC(I2C1))
+  {
+    if (LL_I2C_IsActiveFlag_NACK(I2C1)) return i2c_nack_cleanup();
+  }
+
+  LL_I2C_HandleTransfer(I2C1, dev_addr, LL_I2C_ADDRSLAVE_7BIT, len,
+                        LL_I2C_MODE_AUTOEND, LL_I2C_GENERATE_START_READ);
+  for (uint8_t i = 0; i < len; i++)
+  {
+    while (!LL_I2C_IsActiveFlag_RXNE(I2C1)) {}
+    data[i] = LL_I2C_ReceiveData8(I2C1);
+  }
+  while (!LL_I2C_IsActiveFlag_STOP(I2C1)) {}
+  LL_I2C_ClearFlag_STOP(I2C1);
+  return 0;
+}
+
+uint8_t i2c_write(uint8_t dev_addr, uint8_t reg_addr, uint8_t *data, uint8_t len)
+{
+  LL_I2C_HandleTransfer(I2C1, dev_addr, LL_I2C_ADDRSLAVE_7BIT, len + 1,
+                        LL_I2C_MODE_AUTOEND, LL_I2C_GENERATE_START_WRITE);
+
+  for (uint8_t i = 0; i < len + 1; i++)
+  {
+    while (!LL_I2C_IsActiveFlag_TXIS(I2C1))
+    {
+      if (LL_I2C_IsActiveFlag_NACK(I2C1)) return i2c_nack_cleanup();
+    }
+    LL_I2C_TransmitData8(I2C1, (i == 0) ? reg_addr : data[i - 1]);
+  }
+  while (!LL_I2C_IsActiveFlag_STOP(I2C1)) {}
+  LL_I2C_ClearFlag_STOP(I2C1);
+  return 0;
+}
+
+uint8_t i2c_receive(uint8_t dev_addr, uint8_t *data, uint8_t len)
+{
+  LL_I2C_HandleTransfer(I2C1, dev_addr, LL_I2C_ADDRSLAVE_7BIT, len,
+                        LL_I2C_MODE_AUTOEND, LL_I2C_GENERATE_START_READ);
+  for (uint8_t i = 0; i < len; i++)
+  {
+    while (!LL_I2C_IsActiveFlag_RXNE(I2C1))
+    {
+      if (LL_I2C_IsActiveFlag_NACK(I2C1)) return i2c_nack_cleanup();
+    }
+    data[i] = LL_I2C_ReceiveData8(I2C1);
+  }
+  while (!LL_I2C_IsActiveFlag_STOP(I2C1)) {}
+  LL_I2C_ClearFlag_STOP(I2C1);
+  return 0;
+}
+
 /* USER CODE END 1 */
 
