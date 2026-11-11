@@ -44,3 +44,83 @@ uint8_t bmp180_init(void)
 
   return 0;
 }
+
+static uint8_t bmp180_read_ut(int32_t *ut)
+{
+  uint8_t cmd = BMP180_CMD_TEMP;
+  uint8_t d[2];
+
+  if (bmp_write(BMP180_ADDR, BMP180_REG_CTRL, &cmd, 1)) return 1;
+  bmp_delay(5);
+  if (bmp_read(BMP180_ADDR, BMP180_REG_OUT, d, 2)) return 1;
+
+  *ut = ((int32_t)d[0] << 8) | d[1];
+  return 0;
+}
+
+static uint8_t bmp180_read_up(int32_t *up)
+{
+  uint8_t cmd = BMP180_CMD_PRESS + (BMP180_OSS << 6);
+  uint8_t d[3];
+
+  if (bmp_write(BMP180_ADDR, BMP180_REG_CTRL, &cmd, 1)) return 1;
+  bmp_delay(BMP180_PRESS_DELAY);
+  if (bmp_read(BMP180_ADDR, BMP180_REG_OUT, d, 3)) return 1;
+
+  *up = (((int32_t)d[0] << 16) | ((int32_t)d[1] << 8) | d[2]) >> (8 - BMP180_OSS);
+  return 0;
+}
+
+static int32_t bmp180_calc_b5(int32_t ut)
+{
+  int32_t x1, x2;
+
+  x1 = ((ut - ac6) * ac5) >> 15;
+  x2 = ((int32_t)mc << 11) / (x1 + md);
+  return x1 + x2;
+}
+
+uint8_t bmp180_get_temperature(float *temp)
+{
+  int32_t ut, b5;
+
+  if (bmp180_read_ut(&ut)) return 1;
+
+  b5 = bmp180_calc_b5(ut);
+  *temp = ((b5 + 8) >> 4) / 10.0f;
+  return 0;
+}
+
+uint8_t bmp180_get_pressure(float *press)
+{
+  int32_t ut, up, b3, b5, b6, x1, x2, x3, p;
+  uint32_t b4, b7;
+
+  if (bmp180_read_ut(&ut)) return 1;
+  if (bmp180_read_up(&up)) return 1;
+
+  b5 = bmp180_calc_b5(ut);
+  b6 = b5 - 4000;
+  x1 = (b2 * ((b6 * b6) >> 12)) >> 11;
+  x2 = (ac2 * b6) >> 11;
+  x3 = x1 + x2;
+  b3 = ((((int32_t)ac1 * 4 + x3) << BMP180_OSS) + 2) / 4;
+  x1 = (ac3 * b6) >> 13;
+  x2 = (b1 * ((b6 * b6) >> 12)) >> 16;
+  x3 = ((x1 + x2) + 2) >> 2;
+  b4 = (ac4 * (uint32_t)(x3 + 32768)) >> 15;
+  b7 = ((uint32_t)up - b3) * (50000 >> BMP180_OSS);
+
+  if (b7 < 0x80000000)
+    p = (b7 * 2) / b4;
+  else
+    p = (b7 / b4) * 2;
+
+  x1 = (p >> 8) * (p >> 8);
+  x1 = (x1 * 3038) >> 16;
+  x2 = (-7357 * p) >> 16;
+  p = p + ((x1 + x2 + 3791) >> 4);
+
+  *press = p / 100.0f;
+  return 0;
+}

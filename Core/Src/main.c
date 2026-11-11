@@ -72,6 +72,7 @@ int main(void)
   char msg[64];
   uint8_t b[6];
   uint8_t cmd[2];
+  float temp, press;
 
   /* USER CODE END 1 */
 
@@ -112,17 +113,8 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	    cmd[0] = 0x2E;
-	    i2c_write(0xEE, 0xF4, cmd, 1);
-	    LL_mDelay(5);
-	    i2c_read(0xEE, 0xF6, b, 2);
-	    uint16_t ut = ((uint16_t)b[0] << 8) | b[1];
-
-	    cmd[0] = 0x34;
-	    i2c_write(0xEE, 0xF4, cmd, 1);
-	    LL_mDelay(5);
-	    i2c_read(0xEE, 0xF6, b, 3);
-	    uint32_t up = (((uint32_t)b[0] << 16) | ((uint32_t)b[1] << 8) | b[2]) >> 8;
+	    bmp180_get_temperature(&temp);
+	    bmp180_get_pressure(&press);
 
 	    cmd[0] = 0x33; cmd[1] = 0x00;
 	    i2c_write(0x70, 0xAC, cmd, 2);
@@ -131,7 +123,7 @@ int main(void)
 	    uint32_t rh = ((uint32_t)b[1] << 12) | ((uint32_t)b[2] << 4) | (b[3] >> 4);
 	    uint32_t rt = ((uint32_t)(b[3] & 0x0F) << 16) | ((uint32_t)b[4] << 8) | b[5];
 
-	    sprintf(msg, "%u,%lu,%lu,%lu\r\n", ut, (unsigned long)up,
+	    sprintf(msg, "%.1f,%.2f,%lu,%lu\r\n", temp, press,
 	            (unsigned long)rh, (unsigned long)rt);
 	    usart2_send_string(msg);
 
