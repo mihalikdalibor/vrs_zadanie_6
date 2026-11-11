@@ -27,6 +27,8 @@
 #include <stdio.h>
 #include "bmp180.h"
 
+#include "aht10.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -106,6 +108,9 @@ int main(void)
   sprintf(msg, "bmp180_init: %u\r\n", bmp180_init());
   usart2_send_string(msg);
   bmp180_get_ref_pressure(&ref_press);
+  aht10_register_callbacks(i2c_write, i2c_receive, LL_mDelay);
+  sprintf(msg, "aht10_init: %u\r\n", aht10_init());
+  usart2_send_string(msg);
   /* USER CODE END 2 */
 
   /* Infinite loop */
