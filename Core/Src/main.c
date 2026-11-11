@@ -72,10 +72,9 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
   char msg[64];
-  uint8_t b[6];
-  uint8_t cmd[2];
   float temp, press, alt;
   float ref_press = 0;
+  float hum, temp_aht;
 
   /* USER CODE END 1 */
 
@@ -124,15 +123,10 @@ int main(void)
 	    bmp180_get_pressure(&press);
 	    alt = bmp180_get_altitude(press, ref_press);
 
-	    cmd[0] = 0x33; cmd[1] = 0x00;
-	    i2c_write(0x70, 0xAC, cmd, 2);
-	    LL_mDelay(80);
-	    i2c_receive(0x70, b, 6);
-	    uint32_t rh = ((uint32_t)b[1] << 12) | ((uint32_t)b[2] << 4) | (b[3] >> 4);
-	    uint32_t rt = ((uint32_t)(b[3] & 0x0F) << 16) | ((uint32_t)b[4] << 8) | b[5];
+	    aht10_get_humidity(&hum);
+	    aht10_get_temperature(&temp_aht);
 
-	    sprintf(msg, "%.1f,%.2f,%.2f,%lu,%lu\r\n", temp, press, alt,
-	            (unsigned long)rh, (unsigned long)rt);
+	    sprintf(msg, "%.1f,%.2f,%.2f,%.1f,%.1f\r\n", temp, press, alt, hum, temp_aht);
 	    usart2_send_string(msg);
 
 	    LL_GPIO_TogglePin(GPIOB, LL_GPIO_PIN_3);
