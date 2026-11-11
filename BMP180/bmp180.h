@@ -18,6 +18,7 @@
 
 #define BMP180_OSS           3
 #define BMP180_PRESS_DELAY   26
+#define BMP180_REF_SAMPLES   10
 
 typedef uint8_t (*bmp180_read_t)(uint8_t dev_addr, uint8_t reg_addr, uint8_t *data, uint8_t len);
 typedef uint8_t (*bmp180_write_t)(uint8_t dev_addr, uint8_t reg_addr, uint8_t *data, uint8_t len);
@@ -27,5 +28,7 @@ void bmp180_register_callbacks(bmp180_read_t read, bmp180_write_t write, bmp180_
 uint8_t bmp180_init(void);
 uint8_t bmp180_get_temperature(float *temp);
 uint8_t bmp180_get_pressure(float *press);
+uint8_t bmp180_get_ref_pressure(float *ref);
+float bmp180_get_altitude(float press, float ref_press);
 
 #endif

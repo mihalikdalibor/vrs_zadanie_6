@@ -1,4 +1,5 @@
 #include "bmp180.h"
+#include <math.h>
 
 static bmp180_read_t  bmp_read  = 0;
 static bmp180_write_t bmp_write = 0;
@@ -123,4 +124,24 @@ uint8_t bmp180_get_pressure(float *press)
 
   *press = p / 100.0f;
   return 0;
+}
+
+uint8_t bmp180_get_ref_pressure(float *ref)
+{
+  float p;
+  float sum = 0;
+
+  for (uint8_t i = 0; i < BMP180_REF_SAMPLES; i++)
+  {
+    if (bmp180_get_pressure(&p)) return 1;
+    sum += p;
+  }
+
+  *ref = sum / BMP180_REF_SAMPLES;
+  return 0;
+}
+
+float bmp180_get_altitude(float press, float ref_press)
+{
+  return 44330.0f * (1.0f - powf(press / ref_press, 1.0f / 5.255f));
 }
