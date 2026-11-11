@@ -26,7 +26,6 @@
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
 #include "bmp180.h"
-
 #include "aht10.h"
 
 /* USER CODE END Includes */
@@ -72,9 +71,9 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
   char msg[64];
-  float temp, press, alt;
+  float temp = 0, hum = 0, press = 0, alt = 0;
   float ref_press = 0;
-  float hum, temp_aht;
+  uint8_t bmp_ok = 0, aht_ok = 0;
 
   /* USER CODE END 1 */
 
@@ -104,12 +103,15 @@ int main(void)
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
   bmp180_register_callbacks(i2c_read, i2c_write, LL_mDelay);
-  sprintf(msg, "bmp180_init: %u\r\n", bmp180_init());
-  usart2_send_string(msg);
-  bmp180_get_ref_pressure(&ref_press);
   aht10_register_callbacks(i2c_write, i2c_receive, LL_mDelay);
-  sprintf(msg, "aht10_init: %u\r\n", aht10_init());
-  usart2_send_string(msg);
+
+  if (bmp180_init() == 0 && bmp180_get_ref_pressure(&ref_press) == 0)
+    bmp_ok = 1;
+  if (aht10_init() == 0)
+    aht_ok = 1;
+
+  if (!bmp_ok) usart2_send_string("BMP180 error\r\n");
+  if (!aht_ok) usart2_send_string("AHT10 error\r\n");
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -119,18 +121,27 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	    bmp180_get_temperature(&temp);
-	    bmp180_get_pressure(&press);
-	    alt = bmp180_get_altitude(press, ref_press);
+    if (aht_ok)
+    {
+      aht10_get_temperature(&temp);
+      aht10_get_humidity(&hum);
+    }
+    else if (bmp_ok)
+    {
+      bmp180_get_temperature(&temp);
+    }
 
-	    aht10_get_humidity(&hum);
-	    aht10_get_temperature(&temp_aht);
+    if (bmp_ok)
+    {
+      bmp180_get_pressure(&press);
+      alt = bmp180_get_altitude(press, ref_press);
+    }
 
-	    sprintf(msg, "%.1f,%.2f,%.2f,%.1f,%.1f\r\n", temp, press, alt, hum, temp_aht);
-	    usart2_send_string(msg);
+    sprintf(msg, "%.1f,%.0f,%.2f,%.2f\r\n", temp, hum, press, alt);
+    usart2_send_string(msg);
 
-	    LL_GPIO_TogglePin(GPIOB, LL_GPIO_PIN_3);
-	    LL_mDelay(1000);
+    LL_GPIO_TogglePin(GPIOB, LL_GPIO_PIN_3);
+    LL_mDelay(800);
   }
   /* USER CODE END 3 */
 }
