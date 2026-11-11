@@ -15,22 +15,30 @@ void bmp180_register_callbacks(bmp180_read_t read, bmp180_write_t write, bmp180_
   bmp_delay = delay;
 }
 
+uint8_t bmp180_read_reg(uint8_t reg, uint8_t *data, uint8_t len)
+{
+  return bmp_read(BMP180_ADDR, reg, data, len);
+}
+
+uint8_t bmp180_write_reg(uint8_t reg, uint8_t value)
+{
+  return bmp_write(BMP180_ADDR, reg, &value, 1);
+}
+
 uint8_t bmp180_init(void)
 {
   uint8_t id;
-  uint8_t val;
   uint8_t c[22];
 
   if (bmp_read == 0 || bmp_write == 0 || bmp_delay == 0) return 1;
 
-  if (bmp_read(BMP180_ADDR, BMP180_REG_ID, &id, 1)) return 1;
+  if (bmp180_read_reg(BMP180_REG_ID, &id, 1)) return 1;
   if (id != BMP180_ID_VALUE) return 2;
 
-  val = BMP180_RESET_VALUE;
-  if (bmp_write(BMP180_ADDR, BMP180_REG_RESET, &val, 1)) return 1;
+  if (bmp180_write_reg(BMP180_REG_RESET, BMP180_RESET_VALUE)) return 1;
   bmp_delay(10);
 
-  if (bmp_read(BMP180_ADDR, BMP180_REG_CALIB, c, 22)) return 1;
+  if (bmp180_read_reg(BMP180_REG_CALIB, c, 22)) return 1;
   ac1 = (int16_t)((c[0] << 8) | c[1]);
   ac2 = (int16_t)((c[2] << 8) | c[3]);
   ac3 = (int16_t)((c[4] << 8) | c[5]);
@@ -48,12 +56,11 @@ uint8_t bmp180_init(void)
 
 static uint8_t bmp180_read_ut(int32_t *ut)
 {
-  uint8_t cmd = BMP180_CMD_TEMP;
   uint8_t d[2];
 
-  if (bmp_write(BMP180_ADDR, BMP180_REG_CTRL, &cmd, 1)) return 1;
+  if (bmp180_write_reg(BMP180_REG_CTRL, BMP180_CMD_TEMP)) return 1;
   bmp_delay(5);
-  if (bmp_read(BMP180_ADDR, BMP180_REG_OUT, d, 2)) return 1;
+  if (bmp180_read_reg(BMP180_REG_OUT, d, 2)) return 1;
 
   *ut = ((int32_t)d[0] << 8) | d[1];
   return 0;
@@ -61,12 +68,11 @@ static uint8_t bmp180_read_ut(int32_t *ut)
 
 static uint8_t bmp180_read_up(int32_t *up)
 {
-  uint8_t cmd = BMP180_CMD_PRESS + (BMP180_OSS << 6);
   uint8_t d[3];
 
-  if (bmp_write(BMP180_ADDR, BMP180_REG_CTRL, &cmd, 1)) return 1;
+  if (bmp180_write_reg(BMP180_REG_CTRL, BMP180_CMD_PRESS + (BMP180_OSS << 6))) return 1;
   bmp_delay(BMP180_PRESS_DELAY);
-  if (bmp_read(BMP180_ADDR, BMP180_REG_OUT, d, 3)) return 1;
+  if (bmp180_read_reg(BMP180_REG_OUT, d, 3)) return 1;
 
   *up = (((int32_t)d[0] << 16) | ((int32_t)d[1] << 8) | d[2]) >> (8 - BMP180_OSS);
   return 0;

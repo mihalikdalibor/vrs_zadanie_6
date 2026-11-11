@@ -11,6 +11,16 @@ void aht10_register_callbacks(aht10_write_t write, aht10_receive_t receive, aht1
   aht_delay   = delay;
 }
 
+uint8_t aht10_write_cmd(uint8_t cmd, uint8_t *param, uint8_t len)
+{
+  return aht_write(AHT10_ADDR, cmd, param, len);
+}
+
+uint8_t aht10_read(uint8_t *data, uint8_t len)
+{
+  return aht_receive(AHT10_ADDR, data, len);
+}
+
 uint8_t aht10_init(void)
 {
   uint8_t param[2] = {AHT10_INIT_PARAM, 0x00};
@@ -20,13 +30,13 @@ uint8_t aht10_init(void)
 
   aht_delay(40);
 
-  if (aht_write(AHT10_ADDR, AHT10_CMD_RESET, 0, 0)) return 1;
+  if (aht10_write_cmd(AHT10_CMD_RESET, 0, 0)) return 1;
   aht_delay(20);
 
-  if (aht_write(AHT10_ADDR, AHT10_CMD_INIT, param, 2)) return 1;
+  if (aht10_write_cmd(AHT10_CMD_INIT, param, 2)) return 1;
   aht_delay(10);
 
-  if (aht_receive(AHT10_ADDR, &status, 1)) return 1;
+  if (aht10_read(&status, 1)) return 1;
   if (!(status & AHT10_STATUS_CAL)) return 2;
 
   return 0;
@@ -36,9 +46,9 @@ static uint8_t aht10_measure(uint8_t *d)
 {
   uint8_t param[2] = {AHT10_MEASURE_PARAM, 0x00};
 
-  if (aht_write(AHT10_ADDR, AHT10_CMD_MEASURE, param, 2)) return 1;
+  if (aht10_write_cmd(AHT10_CMD_MEASURE, param, 2)) return 1;
   aht_delay(AHT10_MEASURE_DELAY);
-  if (aht_receive(AHT10_ADDR, d, 6)) return 1;
+  if (aht10_read(d, 6)) return 1;
   if (d[0] & AHT10_STATUS_BUSY) return 1;
 
   return 0;

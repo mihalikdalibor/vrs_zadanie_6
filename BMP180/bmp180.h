@@ -25,6 +25,8 @@ typedef uint8_t (*bmp180_write_t)(uint8_t dev_addr, uint8_t reg_addr, uint8_t *d
 typedef void    (*bmp180_delay_t)(uint32_t ms);
 
 void bmp180_register_callbacks(bmp180_read_t read, bmp180_write_t write, bmp180_delay_t delay);
+uint8_t bmp180_read_reg(uint8_t reg, uint8_t *data, uint8_t len);
+uint8_t bmp180_write_reg(uint8_t reg, uint8_t value);
 uint8_t bmp180_init(void);
 uint8_t bmp180_get_temperature(float *temp);
 uint8_t bmp180_get_pressure(float *press);

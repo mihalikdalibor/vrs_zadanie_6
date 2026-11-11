@@ -21,6 +21,8 @@ typedef uint8_t (*aht10_receive_t)(uint8_t dev_addr, uint8_t *data, uint8_t len)
 typedef void    (*aht10_delay_t)(uint32_t ms);
 
 void aht10_register_callbacks(aht10_write_t write, aht10_receive_t receive, aht10_delay_t delay);
+uint8_t aht10_write_cmd(uint8_t cmd, uint8_t *param, uint8_t len);
+uint8_t aht10_read(uint8_t *data, uint8_t len);
 uint8_t aht10_init(void);
 
 uint8_t aht10_get_humidity(float *hum);
